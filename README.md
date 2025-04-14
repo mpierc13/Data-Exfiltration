@@ -1,11 +1,12 @@
 ## **Data Exfiltration from PIP'd Employee** 
-![image (3)](https://github.com/user-attachments/assets/7e93bed4-6b56-4daa-9dea-7ad6f8306919)
+![image](https://github.com/user-attachments/assets/bc5a0402-3a09-4e86-a438-5d47120f6bc6)
+
 
 
 # **Use Case**   
 
 ## **Scenario:**  
-An employee named John Doe, working in a sensitive department, was recently placed on a performance improvement plan (PIP). After displaying concerning behavior, management suspects John may be planning to steal proprietary information and leave the company. The investigation involves analyzing activities on John’s corporate device (`windows-target-1`) using Microsoft Defender for Endpoint (MDE).  
+An employee named John Doe, working in a sensitive department, was recently placed on a performance improvement plan (PIP). After displaying concerning behavior, management suspects John may be planning to steal proprietary information and leave the company. The investigation involves analyzing activities on John’s corporate device (`marcels-vm`) using Microsoft Defender for Endpoint (MDE).  
 
 ---
 
@@ -29,27 +30,29 @@ An employee named John Doe, working in a sensitive department, was recently plac
      ```
      ```kql
      DeviceFileEvents
-     | where DeviceName == "windows-target-1"
+     | where DeviceName == "marcels-vm"
      | where FileName endswith ".zip"
      | order by Timestamp desc
      ```
-![Screenshot 2025-01-05 172716](https://github.com/user-attachments/assets/4fdf9cf4-4fed-4935-bfea-bb76d5b01144)
+![image](https://github.com/user-attachments/assets/862212b7-30a9-4c5c-8673-f4c9a11e5970)
+
 
      
 2. **Process Analysis:**  
-   - **Observed Behavior:** I took one of the instances of a zip file being created, took the timestamp and searched under DeviceProcessEvents for anything happening 2 minutes before the archive was created and 2 mintutes after. I discoverd around the same time. apowershellscript silently installed 7zip and then used 7zip to zip up employee data into an archive.
+   - **Observed Behavior:** I took one of the instances of a zip file being created, took the timestamp and searched under DeviceProcessEvents for anything happening 2 minutes before the archive was created and 2 mintutes after. I discoverd around the same time, a PowerShell script silently installed 7zip and then used 7zip to zip up employee data into an archive.
    - **Detection Query (KQL):**  
 
      ```kql
-     let VMName = "windows-target-1";
-     let specificTime = datetime(2025-01-05T21:48:40.6546522Z);
+     let VMName = "marcels-vm";
+     let specificTime = datetime(2025-04-08T14:25:18.1958941Z);
      DeviceProcessEvents
      | where Timestamp between ((specificTime - 2m) .. (specificTime + 2m))
      | where DeviceName == VMName
      | order by Timestamp desc
      | project Timestamp, DeviceName, ActionType, FileName, ProcessCommandLine
      ```
-![Screenshot 2025-01-05 180046](https://github.com/user-attachments/assets/12d51ef5-8b84-4b41-9123-99adcbd3edbe)
+![image](https://github.com/user-attachments/assets/1929e4a2-60d4-46d0-8e7f-dde305d99380)
+
 
 
    3. **Network Exfiltration Check:**  
@@ -58,8 +61,8 @@ An employee named John Doe, working in a sensitive department, was recently plac
    - **Detection Query (KQL):**  
 
      ```kql
-     let VMName = "windows-target-1";
-     let specificTime = datetime(2025-01-05T21:48:40.6546522Z);
+     let VMName = "marcels-vm";
+     let specificTime = datetime(2025-04-08T14:25:18.1958941Z);
      DeviceProcessEvents
      | where Timestamp between ((specificTime - 2m) .. (specificTime + 2m))
      | where DeviceName == VMName
@@ -75,13 +78,16 @@ An employee named John Doe, working in a sensitive department, was recently plac
 
 ## **MITRE ATT&CK Framework TTPs**  
 
-| **Tactic**           | **Technique**                                                                                     | **ID**            | **Description**                                                                                                                                                 |  
-|-----------------------|---------------------------------------------------------------------------------------------------|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|  
-| 🛠️ **Execution**      | PowerShell                                                                                       | T1059.001         | PowerShell scripts were used to silently install 7-Zip and execute file compression commands.                                                                   |  
-| 📦 **Collection**      | Archive Collected Data                                                                           | T1560.001         | Employee data was compressed into `.zip` files using 7-Zip, possibly for easier handling or exfiltration.                                                       |  
-| 📂 **Exfiltration**    | Exfiltration Over Alternative Protocol                                                           | T1048             | Although no network exfiltration was detected, the technique aligns with the potential misuse of alternate protocols for stealthy data transfer.                |  
-| 🔍 **Discovery**       | Process Discovery                                                                                | T1057             | Processes were reviewed to identify activities surrounding the installation and use of 7-Zip for archiving.                                                     |  
-
+| **Technique**                                                                                      | **ID**        | **Description**                                                                                                                                                     |
+|----------------------------------------------------------------------------------------------------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [Command and Scripting Interpreter: PowerShell](https://attack.mitre.org/techniques/T1059/001/)   | T1059.001     | PowerShell was used to silently install 7-Zip and create ZIP archives, suggesting malicious script-based execution.                                                |
+| [Archive Collected Data: Archive via Utility](https://attack.mitre.org/techniques/T1560/001/)     | T1560.001     | The use of 7-Zip to compress data supports this technique, where data is archived before exfiltration.                                                             |
+| [Indicator Removal on Host: File Deletion](https://attack.mitre.org/techniques/T1070/004/)        | T1070.004     | Archiving and backing up files could be an attempt to obscure or stage data for exfiltration while avoiding detection.                                             |
+| [Ingress Tool Transfer](https://attack.mitre.org/techniques/T1105/)                               | T1105         | Silent installation of 7-Zip indicates a tool was transferred to the system, aligning with this technique.                                                         |
+| [Process Injection: Extra Window Memory Injection](https://attack.mitre.org/techniques/T1055/011/)| T1055.011     | Though not confirmed, PowerShell-based silent actions often involve process injection to execute payloads stealthily.                                               |
+| [Obfuscated Files or Information](https://attack.mitre.org/techniques/T1027/)                     | T1027         | Silent installation and use of scripts may involve obfuscation to bypass security tools.                                                                            |
+| [Windows Management Instrumentation](https://attack.mitre.org/techniques/T1047/)                  | T1047         | While not explicitly observed, silent script execution may leverage WMI for local or remote process automation.                                                     |
+                                                     
 ---
 
 ### **Next Steps**  
@@ -101,8 +107,8 @@ An employee named John Doe, working in a sensitive department, was recently plac
 ---
 
 ## Created By:
-- **Author Name**: 
-- **Author Contact**: 
+- **Author Name**: Marcel Pierce
+- **Author Contact**: https://www.linkedin.com/in/marcel-pierce-1a49b52a5/
 - **Date**: Apr 2025
 
 ## Validated By:
