@@ -2,9 +2,6 @@
 ![image](https://github.com/user-attachments/assets/bc5a0402-3a09-4e86-a438-5d47120f6bc6)
 
 
-
-# **Use Case**   
-
 ## **Scenario:**  
 An employee named John Doe, working in a sensitive department, was recently placed on a performance improvement plan (PIP). After displaying concerning behavior, management suspects John may be planning to steal proprietary information and leave the company. The investigation involves analyzing activities on John’s corporate device (`marcels-vm`) using Microsoft Defender for Endpoint (MDE).  
 
